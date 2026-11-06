@@ -58,6 +58,31 @@
   </script>
 
   <style>
+    /* High-tech Cyber Grid Ambient Background */
+    body {
+      background-color: #050811;
+      background-image: 
+        radial-gradient(ellipse 90% 45% at 50% -10%, rgba(45, 212, 238, 0.12), transparent),
+        radial-gradient(circle at 95% 95%, rgba(52, 211, 153, 0.05), transparent 45%),
+        linear-gradient(to right, rgba(26, 44, 84, 0.15) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(26, 44, 84, 0.15) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+      background-attachment: fixed;
+    }
+
+    /* Glassmorphism Elevation */
+    .cyber-card {
+      background: rgba(10, 18, 36, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(31, 51, 94, 0.8);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.55);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .cyber-card:hover {
+      border-color: rgba(45, 212, 238, 0.45);
+      box-shadow: 0 8px 30px -4px rgba(45, 212, 238, 0.12);
+    }
+
     /* Custom scrollbar & micro transitions */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #070c18; }
@@ -259,7 +284,114 @@
            ======================================================== -->
       <section id="view-dashboard" class="view-panel space-y-6">
         
-        <!-- Welcome banner with quick stats -->
+        <!-- ======================= SYSTEM GUIDE OVERVIEW (TUTORIAL LAYOUT) ======================= -->
+        <div class="space-y-4">
+          <!-- Welcome Banner -->
+          <div style="background: linear-gradient(135deg, rgba(14,24,48,0.95) 0%, rgba(10,18,36,0.98) 100%); border: 1px solid #1f335e; border-left: 4px solid #2dd4ee; border-radius: 16px; padding: 20px 24px; position: relative; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;">
+              <div style="max-width: 720px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                  <span style="font-size: 10px; font-family: monospace; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; background: rgba(45,212,238,0.15); color: #2dd4ee; border: 1px solid rgba(45,212,238,0.3); border-radius: 9999px; padding: 2px 8px;">SOC Defense Operations</span>
+                  <span style="font-size: 11px; color: #94a3b8;">•</span>
+                  <span style="font-size: 11px; color: #34d399; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                    <span style="width: 6px; height: 6px; border-radius: 50%; background: #34d399; display: inline-block;"></span>
+                    Sistem Beroperasi Aktif
+                  </span>
+                </div>
+                <h2 style="font-size: 20px; font-weight: 700; color: #ffffff; margin: 0; line-height: 1.3; letter-spacing: -0.01em;">
+                  CyberShield — Firewall Logis &amp; Network Defense Console
+                </h2>
+                <p style="font-size: 13px; color: #94a3b8; margin-top: 6px; line-height: 1.5;">
+                  Console pemantauan keamanan jaringan real-time dengan inspeksi paket mendalam (DPI), firewall berbasis bitwise CIDR, pencegahan intrusi (IDS), dan integrasi cloud PostgreSQL.
+                </p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button type="button" onclick="document.querySelector('[data-view=\'rules\']').click()" style="padding: 8px 14px; background: rgba(45,212,238,0.15); border: 1px solid rgba(45,212,238,0.4); color: #2dd4ee; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                  Kelola Aturan ↗
+                </button>
+                <button type="button" onclick="document.querySelector('[data-view=\'sim\']').click()" style="padding: 8px 14px; background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.4); color: #34d399; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                  Uji Serangan ↗
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3-Column Tutorial / Overview Cards -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+            
+            <!-- Card 1: Content / Rules -->
+            <div style="background: rgba(10,18,36,0.85); border: 1px solid #1f335e; border-radius: 14px; padding: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(45,212,238,0.12); border: 1px solid rgba(45,212,238,0.3); display: flex; align-items: center; justify-content: center; color: #2dd4ee;">
+                  <svg style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4"/>
+                  </svg>
+                </div>
+                <div>
+                  <h4 style="font-size: 13px; font-weight: 700; color: #ffffff; margin: 0;">1. Kebijakan &amp; Aturan</h4>
+                  <span style="font-size: 11px; color: #94a3b8;">Aturan Filter Firewall</span>
+                </div>
+              </div>
+              <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin: 0 0 12px 0;">
+                Menyaring paket masuk berdasarkan IP tunggal, bitwise subnet CIDR (/8 hingga /32), port, dan protokol dengan urutan prioritas top-down.
+              </p>
+              <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid #162544; font-size: 11px;">
+                <span style="color: #64748b;">Mesin Evaluasi:</span>
+                <span style="color: #2dd4ee; font-family: monospace; font-weight: 600;">Bitwise 32-bit</span>
+              </div>
+            </div>
+
+            <!-- Card 2: Academic / Identity -->
+            <div style="background: rgba(10,18,36,0.85); border: 1px solid #1f335e; border-radius: 14px; padding: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); display: flex; align-items: center; justify-content: center; color: #34d399;">
+                  <svg style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h4 style="font-size: 13px; font-weight: 700; color: #ffffff; margin: 0;">2. Identitas Akademik</h4>
+                  <span style="font-size: 11px; color: #94a3b8;">Keamanan Jaringan</span>
+                </div>
+              </div>
+              <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin: 0 0 12px 0;">
+                <b style="color: #ffffff;">Muhamad Yusuf</b> · NIM: <span style="font-family: monospace; color: #34d399;">242502040108</span> · Kelas: <span style="font-family: monospace; color: #ffffff;">3TI01</span>. Dirancang untuk simulasi tugas mata kuliah Keamanan Jaringan.
+              </p>
+              <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid #162544; font-size: 11px;">
+                <span style="color: #64748b;">Pengembang:</span>
+                <span style="color: #34d399; font-weight: 600;">Muhamad Yusuf</span>
+              </div>
+            </div>
+
+            <!-- Card 3: Cloud / Settings -->
+            <div style="background: rgba(10,18,36,0.85); border: 1px solid #1f335e; border-radius: 14px; padding: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.3); display: flex; align-items: center; justify-content: center; color: #fbbf24;">
+                  <svg style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h4 style="font-size: 13px; font-weight: 700; color: #ffffff; margin: 0;">3. Cloud &amp; Pertahanan</h4>
+                  <span style="font-size: 11px; color: #94a3b8;">Supabase &amp; Vercel Live</span>
+                </div>
+              </div>
+              <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin: 0 0 12px 0;">
+                Terhubung ke Supabase PostgreSQL dengan replikasi Realtime, proteksi RLS anti-tamper, serta audit logging serangan terpusat.
+              </p>
+              <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid #162544; font-size: 11px;">
+                <span style="color: #64748b;">Status Database:</span>
+                <span style="color: #34d399; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                  <span style="width: 5px; height: 5px; border-radius: 50%; background: #34d399;"></span>
+                  Supabase Online
+                </span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Quick Stats Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           
           <!-- Card 1: Total Inspected -->
