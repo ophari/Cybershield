@@ -116,7 +116,7 @@ const state = {
   total: 124580,
   allowed: 118920,
   blocked: 5660,
-  running: true,
+  running: false,
   firewallOn: true,
 
   // Metrik Kesehatan Sistem
@@ -246,7 +246,7 @@ function evaluatePacket(pkt) {
   const bl = state.blacklist.find((b) => b.ip === pkt.src);
   if (bl) {
     bl.hits++;
-    if (isSupabaseOnline && supabaseClient) {
+    if (isSupabaseOnline && supabaseClient && (pkt.attack || pkt.manualTest)) {
       supabaseClient.from("blacklist_ips").update({ hits: bl.hits }).eq("ip_address", bl.ip).then();
     }
     return { action: "Blokir", reason: "Blacklist IP (" + bl.reason + ")", by: "blacklist" };
@@ -358,8 +358,9 @@ function processPacket(pkt) {
 
   pushFeedItem(pkt, verdict);
 
-  // Sync Log ke Supabase (Untuk ancaman yang diblokir atau sampel traffic)
-  if (isSupabaseOnline && supabaseClient && (verdict.action === "Blokir" || Math.random() < 0.12)) {
+  // Sync Log ke Supabase HANYA jika ancaman serangan terdeteksi atau pengujian manual
+  // (Lalu lintas simulasi normal rutin TIDAK di-spam ke database agar kuota Supabase hemat & aman)
+  if (isSupabaseOnline && supabaseClient && (pkt.attack || pkt.malicious || pkt.manualTest || (verdict.action === "Blokir" && verdict.by === "blacklist"))) {
     supabaseClient
       .from("security_logs")
       .insert([
@@ -1068,10 +1069,10 @@ $("btnGotoLogs").addEventListener("click", () => switchView("logs"));
 // KONTROL SIMULASI & FIREWALL
 // ========================================================
 function renderSimulationState() {
-  const label = state.running ? "Jeda Simulasi" : "Lanjutkan Simulasi";
+  const label = state.running ? "Jeda Simulasi" : "Mulai Simulasi";
   $("btnToggleSim").textContent = label;
   $("btnToggleSimDash").textContent = label;
-  $("simStateText").textContent = state.running ? "Simulasi Berjalan (Otomatis)" : "Simulasi Dijeda";
+  $("simStateText").textContent = state.running ? "Simulasi Berjalan (Aktif)" : "Simulasi Standby (Manual)";
 
   const dot = $("simStateDot");
   dot.className = "w-3 h-3 rounded-full transition-all " +
@@ -1084,7 +1085,7 @@ function renderSimulationState() {
       ? "bg-neon-green animate-pulse-dot shadow-[0_0_6px_rgba(52,211,153,0.9)]"
       : "bg-amber-400");
 
-  $("feedStatus").textContent = state.running ? "LIVE" : "DIJEDA";
+  $("feedStatus").textContent = state.running ? "LIVE" : "STANDBY";
   $("feedStatus").className = "px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold " +
     (state.running ? "bg-neon-green/15 text-neon-green border border-neon-green/30" : "bg-amber-400/15 text-amber-400 border border-amber-400/30");
 }
