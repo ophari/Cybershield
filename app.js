@@ -1068,6 +1068,8 @@ function switchView(viewName) {
 
   if (viewName === "logs") renderLogs();
   if (viewName === "dashboard") requestAnimationFrame(drawTrafficChart);
+  const mc = $("mainContent");
+  if (mc) mc.scrollTo({ top: 0, behavior: "smooth" });
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
