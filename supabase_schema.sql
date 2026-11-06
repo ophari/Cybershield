@@ -48,16 +48,53 @@ ALTER TABLE public.blacklist_ips ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public access firewall_rules" ON public.firewall_rules;
 DROP POLICY IF EXISTS "Public access security_logs" ON public.security_logs;
 DROP POLICY IF EXISTS "Public access blacklist_ips" ON public.blacklist_ips;
+DROP POLICY IF EXISTS "Allow read firewall_rules" ON public.firewall_rules;
+DROP POLICY IF EXISTS "Allow insert firewall_rules" ON public.firewall_rules;
+DROP POLICY IF EXISTS "Allow update firewall_rules" ON public.firewall_rules;
+DROP POLICY IF EXISTS "Allow delete firewall_rules" ON public.firewall_rules;
+DROP POLICY IF EXISTS "Allow read security_logs" ON public.security_logs;
+DROP POLICY IF EXISTS "Allow insert security_logs" ON public.security_logs;
+DROP POLICY IF EXISTS "Allow delete security_logs" ON public.security_logs;
+DROP POLICY IF EXISTS "Allow read blacklist_ips" ON public.blacklist_ips;
+DROP POLICY IF EXISTS "Allow insert blacklist_ips" ON public.blacklist_ips;
+DROP POLICY IF EXISTS "Allow update blacklist_ips" ON public.blacklist_ips;
+DROP POLICY IF EXISTS "Allow delete blacklist_ips" ON public.blacklist_ips;
 
--- Kebijakan akses anon & authenticated untuk dashboard
-CREATE POLICY "Public access firewall_rules" ON public.firewall_rules
-  FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+-- Kebijakan Akses firewall_rules
+CREATE POLICY "Allow read firewall_rules" ON public.firewall_rules
+  FOR SELECT TO anon, authenticated USING (true);
 
-CREATE POLICY "Public access security_logs" ON public.security_logs
-  FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow insert firewall_rules" ON public.firewall_rules
+  FOR INSERT TO anon, authenticated WITH CHECK (length(rule_name) > 0 AND length(ip_address) > 0);
 
-CREATE POLICY "Public access blacklist_ips" ON public.blacklist_ips
-  FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow update firewall_rules" ON public.firewall_rules
+  FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow delete firewall_rules" ON public.firewall_rules
+  FOR DELETE TO anon, authenticated USING (id > 0);
+
+-- Kebijakan Akses security_logs (Append-Only Audit Trail - UPDATE DILARANG)
+CREATE POLICY "Allow read security_logs" ON public.security_logs
+  FOR SELECT TO anon, authenticated USING (true);
+
+CREATE POLICY "Allow insert security_logs" ON public.security_logs
+  FOR INSERT TO anon, authenticated WITH CHECK (length(source_ip) > 0);
+
+CREATE POLICY "Allow delete security_logs" ON public.security_logs
+  FOR DELETE TO anon, authenticated USING (id > 0);
+
+-- Kebijakan Akses blacklist_ips
+CREATE POLICY "Allow read blacklist_ips" ON public.blacklist_ips
+  FOR SELECT TO anon, authenticated USING (true);
+
+CREATE POLICY "Allow insert blacklist_ips" ON public.blacklist_ips
+  FOR INSERT TO anon, authenticated WITH CHECK (length(ip_address) > 0);
+
+CREATE POLICY "Allow update blacklist_ips" ON public.blacklist_ips
+  FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow delete blacklist_ips" ON public.blacklist_ips
+  FOR DELETE TO anon, authenticated USING (true);
 
 -- ============================================================
 -- REALTIME REPLICATION (Agar Sinkron Otomatis Multi-Device)

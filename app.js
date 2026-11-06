@@ -223,17 +223,25 @@ const validIpOrCidr = (s) => {
   return parts.every((p) => +p >= 0 && +p <= 255);
 };
 
+function ipToLong(ip) {
+  if (!ip || typeof ip !== "string") return 0;
+  const parts = ip.split(".");
+  if (parts.length !== 4) return 0;
+  return parts.reduce((acc, oct) => ((acc << 8) + (parseInt(oct, 10) || 0)) >>> 0, 0);
+}
+
 function matchIp(ruleIp, packetIp) {
+  if (!ruleIp || !packetIp) return false;
   if (ruleIp === "*" || ruleIp === "0.0.0.0/0") return true;
   if (ruleIp === packetIp) return true;
   if (ruleIp.includes("/")) {
     const [baseIp, mask] = ruleIp.split("/");
     const m = parseInt(mask, 10);
-    if (m === 24) {
-      const p1 = baseIp.split(".").slice(0, 3).join(".");
-      const p2 = packetIp.split(".").slice(0, 3).join(".");
-      return p1 === p2;
-    }
+    if (isNaN(m) || m < 0 || m > 32) return false;
+    if (m === 0) return true;
+    // Hitung bitmask 32-bit (unsigned 32-bit integer)
+    const maskBits = m === 32 ? 0xffffffff : ((0xffffffff << (32 - m)) >>> 0);
+    return (ipToLong(packetIp) & maskBits) === (ipToLong(baseIp) & maskBits);
   }
   return false;
 }
@@ -242,7 +250,7 @@ function matchIp(ruleIp, packetIp) {
 // MESIN EVALUASI JARINGAN (CORE NETWORK FIREWALL & IDS)
 // ========================================================
 function evaluatePacket(pkt) {
-  // 1. Lapisan Pertama: Evaluasi Blacklist IP
+  // 1. Lapisan Pertama: Evaluasi Blacklist IP (Drop Immediately)
   const bl = state.blacklist.find((b) => b.ip === pkt.src);
   if (bl) {
     bl.hits++;
@@ -252,12 +260,21 @@ function evaluatePacket(pkt) {
     return { action: "Blokir", reason: "Blacklist IP (" + bl.reason + ")", by: "blacklist" };
   }
 
-  // 2. Lapisan Kedua: Mitigasi Rate Limiting DDoS
+  // 2. Lapisan Kedua: Mitigasi Rate Limiting DDoS & Anti-Spoofing
   if (pkt.forceBlock) {
     return { action: "Blokir", reason: pkt.forceReason || "Rate Limit DDoS", by: "ratelimit" };
   }
+  if (pkt.spoofed || (pkt.interface === "WAN" && isInternal(pkt.src))) {
+    return { action: "Blokir", reason: "Anti-Spoofing: IP Internal Terdeteksi di Ingress Luar (RFC 2827)", by: "antispoof" };
+  }
 
-  // 3. Lapisan Ketiga: Evaluasi Aturan Firewall Aktif (Top-Down)
+  // 3. Lapisan Ketiga: Deteksi Intrusi (Deep Packet Inspection / IDS)
+  // Payload berbahaya dicegat sebelum diberi izin akses port
+  if (pkt.malicious) {
+    return { action: "Blokir", reason: "Deteksi IDS: Signature Payload Berbahaya", by: "ids" };
+  }
+
+  // 4. Lapisan Keempat: Evaluasi Aturan Firewall Aktif (Top-Down)
   if (state.firewallOn) {
     for (const r of state.rules) {
       if (!r.active) continue;
@@ -273,11 +290,6 @@ function evaluatePacket(pkt) {
         };
       }
     }
-  }
-
-  // 4. Lapisan Keempat: Deteksi IDS (Tanda Tangan Serangan)
-  if (pkt.malicious) {
-    return { action: "Blokir", reason: "Deteksi IDS: Signature Payload Berbahaya", by: "ids" };
   }
 
   // 5. Lapisan Kelima: Kebijakan Port Sensitif Eksternal
@@ -402,9 +414,9 @@ function pushFeedItem(pkt, verdict) {
 
   el.innerHTML = `
     <div class="flex items-center gap-2 truncate">
-      <span class="text-slate-500 font-mono text-[10px] flex-shrink-0">${pkt.time}</span>
-      <span class="text-neon-cyan font-mono flex-shrink-0">${esc(pkt.src)}:${pkt.port}</span>
-      <span class="text-slate-400 truncate">${esc(pkt.desc)} <span class="text-slate-500 text-[10px]">(${pkt.proto})</span></span>
+      <span class="text-slate-500 font-mono text-[10px] flex-shrink-0">${esc(pkt.time || nowTime())}</span>
+      <span class="text-neon-cyan font-mono flex-shrink-0">${esc(pkt.src)}:${esc(pkt.port)}</span>
+      <span class="text-slate-400 truncate">${esc(pkt.desc)} <span class="text-slate-500 text-[10px]">(${esc(pkt.proto)})</span></span>
     </div>
     ${badgeHtml}
   `;
@@ -784,24 +796,24 @@ function renderRules() {
             ${esc(r.name)}
           </td>
           <td data-label="Alamat IP" class="py-3 px-3 font-mono text-neon-cyan">${esc(r.ip === "*" ? "* (Semua)" : r.ip)}</td>
-          <td data-label="Port" class="py-3 px-3 font-mono text-slate-300">${r.port === "Semua" ? "Semua" : r.port + " (" + (PORT_NAMES[r.port] || "Custom") + ")"}</td>
-          <td data-label="Protokol" class="py-3 px-3 font-mono text-slate-400"><span class="px-2 py-0.5 rounded bg-cyber-800 border border-cyber-border">${r.proto}</span></td>
+          <td data-label="Port" class="py-3 px-3 font-mono text-slate-300">${r.port === "Semua" ? "Semua" : esc(r.port) + " (" + esc(PORT_NAMES[r.port] || "Custom") + ")"}</td>
+          <td data-label="Protokol" class="py-3 px-3 font-mono text-slate-400"><span class="px-2 py-0.5 rounded bg-cyber-800 border border-cyber-border">${esc(r.proto)}</span></td>
           <td data-label="Aksi" class="py-3 px-3">${actionBadge}</td>
           <td data-label="Status" class="py-3 px-3 text-center">
             <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" data-toggle-rule="${r.id}" ${r.active ? "checked" : ""} class="sr-only peer">
+              <input type="checkbox" data-toggle-rule="${esc(r.id)}" ${r.active ? "checked" : ""} class="sr-only peer">
               <div class="w-9 h-5 bg-cyber-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-neon-green/30 peer-checked:after:bg-neon-green"></div>
             </label>
           </td>
           <td class="py-3 px-3 text-right cell-actions">
             <div class="inline-flex items-center gap-1">
-              <button type="button" data-move-up="${r.id}" class="p-1 rounded text-slate-400 hover:text-neon-cyan hover:bg-cyber-750 transition" title="Naikkan Prioritas (Evaluasi Lebih Dulu)">
+              <button type="button" data-move-up="${esc(r.id)}" class="p-1 rounded text-slate-400 hover:text-neon-cyan hover:bg-cyber-750 transition" title="Naikkan Prioritas (Evaluasi Lebih Dulu)">
                 ▲
               </button>
-              <button type="button" data-move-down="${r.id}" class="p-1 rounded text-slate-400 hover:text-neon-cyan hover:bg-cyber-750 transition" title="Turunkan Prioritas">
+              <button type="button" data-move-down="${esc(r.id)}" class="p-1 rounded text-slate-400 hover:text-neon-cyan hover:bg-cyber-750 transition" title="Turunkan Prioritas">
                 ▼
               </button>
-              <button type="button" data-delete-rule="${r.id}" class="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition" title="Hapus Aturan">
+              <button type="button" data-delete-rule="${esc(r.id)}" class="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition" title="Hapus Aturan">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
@@ -889,9 +901,9 @@ function renderLogs() {
 
       return `
         <tr class="hover:bg-cyber-850/50 transition border-b border-cyber-border-subtle/40">
-          <td data-label="Waktu" class="py-2.5 px-3 font-mono text-slate-400 text-xs">${l.time}</td>
+          <td data-label="Waktu" class="py-2.5 px-3 font-mono text-slate-400 text-xs">${esc(l.time)}</td>
           <td data-label="IP Sumber" class="py-2.5 px-3 font-mono text-neon-cyan font-medium">${esc(l.src)}</td>
-          <td data-label="Port Tujuan" class="py-2.5 px-3 font-mono text-slate-300">${l.port === "—" ? "—" : l.port + " (" + (PORT_NAMES[l.port] || "—") + ")"}</td>
+          <td data-label="Port Tujuan" class="py-2.5 px-3 font-mono text-slate-300">${l.port === "—" ? "—" : esc(l.port) + " (" + esc(PORT_NAMES[l.port] || "—") + ")"}</td>
           <td data-label="Jenis Aktivitas" class="py-2.5 px-3">
             <span class="${jenisBadgeColor}">${esc(l.jenis)}</span>
             <span class="text-slate-400 ml-1.5">— ${esc(l.desc)}</span>
@@ -1451,9 +1463,9 @@ if (tracerForm) {
 
     let html = `
       <div class="flex items-center justify-between pb-2 border-b border-cyber-border-subtle">
-        <span class="text-white font-bold">Hasil Diagnostik Inspeksi: ${ip} → :${port} (${proto})</span>
+        <span class="text-white font-bold">Hasil Diagnostik Inspeksi: ${esc(ip)} → :${esc(port)} (${esc(proto)})</span>
         <span class="px-2.5 py-1 rounded-full text-xs font-bold ${isBlocked ? "bg-neon-red/20 text-neon-red border border-neon-red/40" : "bg-neon-green/20 text-neon-green border border-neon-green/40"}">
-          HASIL AKHIR: ${finalVerdict.action.toUpperCase()}
+          HASIL AKHIR: ${esc(finalVerdict.action.toUpperCase())}
         </span>
       </div>
       <div class="space-y-1.5 pt-2 text-[11px]">
@@ -1467,8 +1479,8 @@ if (tracerForm) {
       html += `
         <div class="p-2 rounded bg-cyber-900 border border-cyber-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-1">
           <div>
-            <span class="text-slate-400 font-semibold">Tahap ${t.step}: ${t.name}</span>
-            <p class="text-slate-300">${t.result}</p>
+            <span class="text-slate-400 font-semibold">Tahap ${esc(t.step)}: ${esc(t.name)}</span>
+            <p class="text-slate-300">${esc(t.result)}</p>
           </div>
           <div class="flex-shrink-0">${badge}</div>
         </div>
