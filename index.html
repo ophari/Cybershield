@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>CyberShield — Dashboard Keamanan Jaringan & Firewall Logis</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%232dd4ee%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z%22/><path d=%22m9 12 2 2 4-4%22/></svg>" />
+
+  <!-- Google Fonts: IBM Plex Sans & IBM Plex Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"IBM Plex Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['"IBM Plex Mono"', 'ui-monospace', 'Menlo', 'monospace'],
+          },
+          colors: {
+            cyber: {
+              950: '#050811',
+              900: '#070c18',
+              850: '#0a1224',
+              800: '#0e1830',
+              750: '#132140',
+              700: '#1a2c54',
+              border: '#1f335e',
+              'border-subtle': '#162544',
+            },
+            neon: {
+              cyan: '#2dd4ee',
+              green: '#34d399',
+              red: '#f87171',
+              amber: '#fbbf24',
+              blue: '#60a5fa',
+            }
+          },
+          boxShadow: {
+            'glow-cyan': '0 0 15px -3px rgba(45, 212, 238, 0.35)',
+            'glow-green': '0 0 15px -3px rgba(52, 211, 153, 0.35)',
+            'glow-red': '0 0 15px -3px rgba(248, 113, 113, 0.35)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbar & micro transitions */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #070c18; }
+    ::-webkit-scrollbar-thumb { background: #1a2c54; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #2dd4ee55; }
+    
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.9); }
+    }
+    .animate-pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
+
+    @keyframes feed-in {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-feed-in { animation: feed-in 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* Custom Switch Component */
+    .toggle-checkbox:checked { right: 0; border-color: #34d399; }
+    .toggle-checkbox:checked + .toggle-label { background-color: rgba(52, 211, 153, 0.25); border-color: rgba(52, 211, 153, 0.5); }
+    .toggle-checkbox:checked + .toggle-label:after { transform: translateX(18px); background-color: #34d399; }
+    
+    /* Responsive Table to Cards on small mobile */
+    @media (max-width: 680px) {
+      .mobile-card-table thead { display: none; }
+      .mobile-card-table tbody tr { display: block; padding: 12px; margin-bottom: 8px; border: 1px solid #162544; border-radius: 8px; background: #0a1224; }
+      .mobile-card-table tbody td { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border: none; }
+      .mobile-card-table tbody td::before { content: attr(data-label); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #8494b1; font-weight: 600; }
+      .mobile-card-table tbody td.cell-actions { justify-content: flex-end; }
+      .mobile-card-table tbody td.cell-actions::before { content: ""; }
+    }
+  </style>
+</head>
+<body class="bg-cyber-950 text-slate-100 font-sans antialiased min-h-screen selection:bg-neon-cyan/20 selection:text-neon-cyan overflow-x-hidden">
+
+  <!-- ======================= TOPBAR ======================= -->
+  <header class="sticky top-0 z-40 bg-cyber-900/90 backdrop-blur-md border-b border-cyber-border px-4 sm:px-6 py-2.5 transition-all">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand & Project Info -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-neon-cyan/10 border border-neon-cyan/30 flex items-center justify-center text-neon-cyan shadow-glow-cyan flex-shrink-0">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
+              CyberShield
+              <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-neon-cyan/15 border border-neon-cyan/30 text-neon-cyan">v4.2 ENT</span>
+            </h1>
+          </div>
+          <p class="text-xs text-slate-400 hidden sm:block">Firewall Logis &amp; Network Threat Prevention System</p>
+        </div>
+      </div>
+
+      <!-- Real-time Status Badges & Controls -->
+      <div class="flex flex-wrap items-center gap-3 sm:gap-4 ml-auto text-xs">
+        
+        <!-- Firewall Status -->
+        <div class="flex items-center gap-2 bg-cyber-850 px-3 py-1.5 rounded-lg border border-cyber-border-subtle">
+          <span id="fwDot" class="w-2.5 h-2.5 rounded-full bg-neon-green shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+          <span class="text-slate-400">Firewall:</span>
+          <b id="fwState" class="text-neon-green font-semibold">AKTIF</b>
+        </div>
+
+        <!-- IDS/IPS Engine -->
+        <div class="hidden md:flex items-center gap-2 bg-cyber-850 px-3 py-1.5 rounded-lg border border-cyber-border-subtle">
+          <span class="w-2.5 h-2.5 rounded-full bg-neon-green animate-pulse-dot shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+          <span class="text-slate-400">IDS/IPS:</span>
+          <b class="text-white font-semibold">ONLINE</b>
+        </div>
+
+        <!-- Threat Level -->
+        <div class="hidden sm:flex items-center gap-2 bg-cyber-850 px-3 py-1.5 rounded-lg border border-cyber-border-subtle">
+          <span id="threatDot" class="w-2.5 h-2.5 rounded-full bg-neon-green shadow-[0_0_8px_rgba(52,211,153,0.8)] transition-colors duration-300"></span>
+          <span class="text-slate-400">Ancaman:</span>
+          <b id="threatLevel" class="text-white font-semibold">RENDAH</b>
+        </div>
+
+        <!-- Live Clock (WIB) -->
+        <div class="bg-cyber-850/80 px-3 py-1.5 rounded-lg border border-cyber-border-subtle font-mono text-slate-300 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span id="clock" class="text-neon-cyan font-medium">--:--:--</span>
+          <span class="text-[10px] text-slate-500">WIB</span>
+        </div>
+
+        <!-- Student Info Modal Trigger -->
+        <button id="btnStudentInfo" type="button" class="px-2.5 py-1.5 rounded-lg bg-cyber-700/60 hover:bg-cyber-700 text-slate-300 hover:text-white border border-cyber-border transition flex items-center gap-1.5" title="Informasi Tugas & Pengembang">
+          <svg class="w-3.5 h-3.5 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span class="hidden lg:inline">Identitas</span>
+        </button>
+
+        <!-- Audio Effects Toggle -->
+        <button id="btnAudioToggle" type="button" class="px-2.5 py-1.5 rounded-lg bg-cyber-850 hover:bg-cyber-800 text-slate-400 hover:text-white border border-cyber-border-subtle transition flex items-center gap-1.5" title="Aktifkan / Bisukan Audio Notifikasi">
+          <svg id="audioIcon" class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+          </svg>
+          <span class="hidden xl:inline text-[11px]" id="audioText">Mute</span>
+        </button>
+
+        <!-- Supabase Cloud DB Badge & Modal Trigger -->
+        <button id="btnSupabaseConfig" type="button" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-cyber-850 hover:bg-cyber-800 border border-cyber-border-subtle hover:border-emerald-500/40 transition text-xs font-mono" title="Pengaturan & Status Koneksi Supabase Online">
+          <span id="supabaseDot" class="w-2 h-2 rounded-full bg-slate-500 transition-colors"></span>
+          <span class="text-slate-400">DB:</span>
+          <b id="supabaseStatusText" class="text-slate-400 font-semibold">LOKAL</b>
+        </button>
+
+        <!-- Toggle Firewall Button -->
+        <button id="btnFirewallToggle" type="button" class="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-medium transition active:scale-95">
+          Nonaktifkan Firewall
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ======================= MAIN LAYOUT ======================= -->
+  <div class="max-w-7xl mx-auto flex flex-col lg:grid lg:grid-cols-[220px_minmax(0,1fr)] min-h-[calc(100vh-57px)]">
+    
+    <!-- ======================= SIDEBAR ======================= -->
+    <aside class="bg-cyber-900 border-b lg:border-b-0 lg:border-r border-cyber-border flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible p-2.5 lg:p-4 gap-1.5 lg:sticky lg:top-[57px] lg:h-[calc(100vh-57px)] z-30 scrollbar-none">
+      
+      <div class="hidden lg:block text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-3 py-2">
+        Menu Utama
+      </div>
+
+      <!-- Nav Items -->
+      <button type="button" data-view="dashboard" class="nav-item active flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition text-slate-400 hover:text-white hover:bg-cyber-850 whitespace-nowrap lg:whitespace-normal w-full text-left">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>
+        </svg>
+        <span>Dashboard</span>
+      </button>
+
+      <button type="button" data-view="rules" class="nav-item flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition text-slate-400 hover:text-white hover:bg-cyber-850 whitespace-nowrap lg:whitespace-normal w-full text-left">
+        <div class="flex items-center gap-2.5">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/>
+          </svg>
+          <span>Aturan Firewall</span>
+        </div>
+        <span id="badgeRules" class="font-mono text-[11px] px-2 py-0.5 rounded-full bg-cyber-800 border border-cyber-border text-slate-300">4</span>
+      </button>
+
+      <button type="button" data-view="sim" class="nav-item flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition text-slate-400 hover:text-white hover:bg-cyber-850 whitespace-nowrap lg:whitespace-normal w-full text-left">
+        <div class="flex items-center gap-2.5">
+          <svg class="w-4 h-4 flex-shrink-0 text-neon-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>
+          </svg>
+          <span>Simulasi Traffic</span>
+        </div>
+        <span id="simDot" class="w-2 h-2 rounded-full bg-neon-green animate-pulse-dot shadow-[0_0_6px_rgba(52,211,153,0.9)] flex-shrink-0"></span>
+      </button>
+
+      <button type="button" data-view="logs" class="nav-item flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition text-slate-400 hover:text-white hover:bg-cyber-850 whitespace-nowrap lg:whitespace-normal w-full text-left">
+        <div class="flex items-center gap-2.5">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
+          </svg>
+          <span>Log Keamanan</span>
+        </div>
+        <span id="badgeLogs" class="font-mono text-[11px] px-2 py-0.5 rounded-full bg-cyber-800 border border-cyber-border text-slate-300">0</span>
+      </button>
+
+      <button type="button" data-view="blacklist" class="nav-item flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition text-slate-400 hover:text-white hover:bg-cyber-850 whitespace-nowrap lg:whitespace-normal w-full text-left">
+        <div class="flex items-center gap-2.5">
+          <svg class="w-4 h-4 flex-shrink-0 text-neon-red" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>
+          </svg>
+          <span>Blacklist IP</span>
+        </div>
+        <span id="badgeBlacklist" class="font-mono text-[11px] px-2 py-0.5 rounded-full bg-cyber-800 border border-cyber-border text-slate-300">5</span>
+      </button>
+
+      <!-- Sidebar Footer -->
+      <div class="hidden lg:flex flex-col mt-auto pt-4 border-t border-cyber-border-subtle px-2 text-xs text-slate-400 space-y-2">
+        <div class="flex items-center justify-between text-[11px]">
+          <span>Inspeksi Paket:</span>
+          <span class="text-neon-cyan font-mono font-semibold" id="sidePackets">124.580</span>
+        </div>
+        <button id="btnOpenSqlModal" type="button" class="w-full mt-2 py-2 px-3 bg-cyber-800 hover:bg-cyber-750 text-slate-300 hover:text-white border border-cyber-border rounded-lg text-xs font-mono transition flex items-center justify-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+          </svg>
+          Database SQL Schema
+        </button>
+      </div>
+
+    </aside>
+
+    <!-- ======================= MAIN CONTENT VIEWS ======================= -->
+    <main class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
+
+      <!-- ========================================================
+           VIEW 1: DASHBOARD
+           ======================================================== -->
+      <section id="view-dashboard" class="view-panel space-y-6">
+        
+        <!-- Welcome banner with quick stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          
+          <!-- Card 1: Total Inspected -->
+          <div class="bg-cyber-900 border border-cyber-border rounded-2xl p-5 relative overflow-hidden group hover:border-neon-cyan/50 transition">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-xs uppercase tracking-wider font-semibold text-slate-400">Total Paket Diperiksa</p>
+                <h3 id="statTotal" class="text-2xl sm:text-3xl font-bold font-mono text-white mt-1.5 tracking-tight">124.580</h3>
+                <p id="statTotalSub" class="text-xs text-slate-400 mt-1">Diperbarui secara waktu nyata</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-neon-cyan/10 border border-neon-cyan/30 flex items-center justify-center text-neon-cyan shadow-glow-cyan flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Allowed -->
+          <div class="bg-cyber-900 border border-cyber-border rounded-2xl p-5 relative overflow-hidden group hover:border-neon-green/50 transition">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-xs uppercase tracking-wider font-semibold text-slate-400">Koneksi Diizinkan</p>
+                <h3 id="statAllowed" class="text-2xl sm:text-3xl font-bold font-mono text-neon-green mt-1.5 tracking-tight">118.920</h3>
+                <p id="statAllowedSub" class="text-xs text-slate-400 mt-1">95,4% dari total paket</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-neon-green/10 border border-neon-green/30 flex items-center justify-center text-neon-green shadow-glow-green flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Blocked Threats -->
+          <div class="bg-cyber-900 border border-cyber-border rounded-2xl p-5 relative overflow-hidden group hover:border-neon-red/50 transition">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-xs uppercase tracking-wider font-semibold text-slate-400">Ancaman Diblokir</p>
+                <h3 id="statBlocked" class="text-2xl sm:text-3xl font-bold font-mono text-neon-red mt-1.5 tracking-tight">5.660</h3>
+                <p class="text-xs text-slate-400 mt-1">Firewall, IDS &amp; Blacklist</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-neon-red/10 border border-neon-red/30 flex items-center justify-center text-neon-red shadow-glow-red flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+                  <path d="m4.5 5.5 15 13"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Active Rules -->
+          <div class="bg-cyber-900 border border-cyber-border rounded-2xl p-5 relative overflow-hidden group hover:border-amber-400/50 transition">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-xs uppercase tracking-wider font-semibold text-slate-400">Aturan Aktif</p>
+                <h3 id="statRules" class="text-2xl sm:text-3xl font-bold font-mono text-amber-400 mt-1.5 tracking-tight">4</h3>
+                <p id="statRulesSub" class="text-xs text-slate-400 mt-1">dari 4 aturan terdaftar</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400 flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Middle Section: Traffic Chart & System Monitors -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          
+          <!-- Traffic Chart (2 Cols) -->
+          <div class="xl:col-span-2 bg-cyber-900 border border-cyber-border rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+              <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-cyber-border-subtle">
+                <div>
+                  <h3 class="text-base font-semibold text-white flex items-center gap-2">
+                    <svg class="w-4 h-4 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 13l4-4 4 3 5-6"/>
+                    </svg>
+                    Volume Traffic Waktu Nyata
+                  </h3>
+                  <p class="text-xs text-slate-400 mt-0.5">Paket diizinkan vs paket diblokir per detik</p>
+                </div>
+
+                <div class="flex items-center gap-4">
+                  <div class="flex items-center gap-3 text-xs">
+                    <span class="flex items-center gap-1.5 text-slate-300">
+                      <span class="w-2.5 h-2.5 rounded-sm bg-neon-green"></span> Diizinkan
+                    </span>
+                    <span class="flex items-center gap-1.5 text-slate-300">
+                      <span class="w-2.5 h-2.5 rounded-sm bg-neon-red"></span> Diblokir
+                    </span>
+                  </div>
+                  <button id="btnToggleSimDash" type="button" class="px-3 py-1.5 text-xs bg-cyber-800 hover:bg-cyber-750 text-slate-300 hover:text-white border border-cyber-border rounded-lg transition">
+                    Jeda Simulasi
+                  </button>
+                </div>
+              </div>
+
+              <!-- Canvas Container -->
+              <div class="w-full h-52 sm:h-64 mt-4 relative">
+                <canvas id="trafficChart" class="w-full h-full block" aria-label="Grafik volume traffic waktu nyata"></canvas>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-3 border-t border-cyber-border-subtle font-mono">
+              <span>← Riwayat 40 detik terakhir</span>
+              <span class="flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse-dot"></span> Waktu Nyata (1 Hz)
+              </span>
+            </div>
+          </div>
+
+          <!-- Stack: Blocked Ports & Health (1 Col) -->
+          <div class="space-y-6">
+            
+            <!-- Most Blocked Ports -->
+            <div class="bg-cyber-900 border border-cyber-border rounded-2xl p-5">
+              <div class="pb-3 border-b border-cyber-border-subtle">
+                <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                  <svg class="w-4 h-4 text-neon-red" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+                  </svg>
+                  Port Paling Sering Diblokir
+                </h3>
+                <p class="text-[11px] text-slate-400 mt-0.5">Berdasarkan port target percobaan serangan</p>
+              </div>
+              <div id="portsList" class="divide-y divide-cyber-border-subtle mt-1 text-xs">
+                <!-- Dynamically filled by JS -->
+              </div>
+            </div>
+
+            <!-- System Health -->
+            <div class="bg-cyber-900 border border-cyber-border rounded-2xl p-5">
+              <div class="pb-3 border-b border-cyber-border-subtle">
+                <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                  <svg class="w-4 h-4 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.86 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.86-6.02A1 1 0 0 0 11 14z"/>
+                  </svg>
+                  Kesehatan Sistem &amp; Beban IDS
+                </h3>
+              </div>
+              
+              <div class="space-y-3.5 mt-3.5 text-xs">
+                <div>
+                  <div class="flex justify-between text-slate-300 mb-1 font-mono">
+                    <span>Beban CPU</span>
+                    <b id="cpuVal" class="text-white">18%</b>
+                  </div>
+                  <div class="h-2 w-full bg-cyber-950 border border-cyber-border rounded-full overflow-hidden">
+                    <div id="cpuBar" class="h-full bg-neon-cyan transition-all duration-700" style="width: 18%"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-slate-300 mb-1 font-mono">
+                    <span>Penggunaan Memori</span>
+                    <b id="memVal" class="text-white">42%</b>
+                  </div>
+                  <div class="h-2 w-full bg-cyber-950 border border-cyber-border rounded-full overflow-hidden">
+                    <div id="memBar" class="h-full bg-neon-cyan transition-all duration-700" style="width: 42%"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-slate-300 mb-1 font-mono">
+                    <span>Bandwidth Jaringan</span>
+                    <b id="bwVal" class="text-white">1,4 Mb/s</b>
+                  </div>
+                  <div class="h-2 w-full bg-cyber-950 border border-cyber-border rounded-full overflow-hidden">
+                    <div id="bwBar" class="h-full bg-neon-cyan transition-all duration-700" style="width: 12%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Recent Alerts Table -->
+        <div class="bg-cyber-900 border border-cyber-border rounded-2xl p-5">
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-cyber-border-subtle">
+            <div>
+              <h3 class="text-base font-semibold text-white flex items-center gap-2">
+                <svg class="w-4 h-4 text-neon-red" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+                </svg>
+                Peringatan Keamanan Terkini
+              </h3>
+              <p class="text-xs text-slate-400 mt-0.5">Percobaan serangan terakhir yang diblokir oleh sistem</p>
+            </div>
+            <button id="btnGotoLogs" type="button" class="text-xs font-medium text-neon-cyan hover:underline flex items-center gap-1">
+              Lihat Semua Log →
+            </button>
+          </div>
+
+          <div class="overflow-x-auto mt-3">
+            <table class="w-full text-left text-xs mobile-card-table">
+              <thead>
+                <tr class="text-[11px] uppercase tracking-wider text-slate-400 border-b border-cyber-border-subtle">
+                  <th class="py-2.5 px-3">Waktu</th>
+                  <th class="py-2.5 px-3">IP Asal</th>
+                  <th class="py-2.5 px-3">Port Target</th>
+                  <th class="py-2.5 px-3">Deskripsi Serangan</th>
+                  <th class="py-2.5 px-3">Tindakan</th>
+                </tr>
+              </thead>
+              <tbody id="alertsBody" class="divide-y divide-cyber-border-subtle/50 font-sans">
+                <!-- Dynamically filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           VIEW 2: ATURAN FIREWALL (FIREWALL RULES)
+           ======================================================== -->
+      <section id="view-rules" class="view-panel hidden space-y-6">
+        
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Manajemen Aturan Firewall</h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1 max-w-3xl">
+            Aturan dievaluasi secara sekuensial dari atas ke bawah. Paket jaringan yang cocok dengan Alamat IP, Port, dan Protokol akan langsung dieksekusi sesuai aksinya (Izinkan atau Blokir).
+          </p>
+        </div>
+
+        <!-- Warning when Firewall is OFF -->
+        <div id="fwOffNotice" class="hidden items-center gap-3 p-4 rounded-xl bg-neon-red/10 border border-neon-red/30 text-rose-200 text-xs sm:text-sm">
+          <svg class="w-5 h-5 flex-shrink-0 text-neon-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <b>Peringatan: Firewall sedang NONAKTIF!</b> Seluruh aturan di bawah tidak diterapkan pada simulasi lalu lintas data. Aktifkan kembali lewat tombol di bilah atas.
+          </div>
+        </div>
+
+        <!-- Add Rule Form -->
+        <div class="bg-cyber-900 border border-cyber-border rounded-2xl p-5">
+          <h3 class="text-base font-semibold text-white mb-4 flex items-center gap-2">
+            <svg class="w-4 h-4 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Tambah Aturan Baru
+          </h3>
+
+          <form id="ruleForm" novalidate>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 items-end">
+              
+              <!-- Rule Name -->
+              <div class="lg:col-span-2">
+                <label for="rName" class="block text-xs font-semibold text-slate-300 mb-1.5">Nama Aturan</label>
+                <input id="rName" type="text" placeholder="cth. Blokir SSH Eksternal" autocomplete="off" class="w-full bg-cyber-950 border border-cyber-border focus:border-neon-cyan rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-500 outline-none transition" />
+              </div>
+
+              <!-- IP Address -->
+              <div>
+                <label for="rIp" class="block text-xs font-semibold text-slate-300 mb-1.5">Alamat IP / Wildcard</label>
+                <input id="rIp" type="text" placeholder="203.0.113.10 atau *" autocomplete="off" class="w-full bg-cyber-950 border border-cyber-border focus:border-neon-cyan rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-500 font-mono outline-none transition" />
+              </div>
+
+              <!-- Port -->
+              <div>
+                <label for="rPort" class="block text-xs font-semibold text-slate-300 mb-1.5">Port (1-65535)</label>
+                <input id="rPort" type="text" placeholder="22 atau Semua" autocomplete="off" class="w-full bg-cyber-950 border border-cyber-border focus:border-neon-cyan rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-500 font-mono outline-none transition" />
+              </div>
+
+              <!-- Protocol -->
+              <div>
+                <label for="rProto" class="block text-xs font-semibold text-slate-300 mb-1.5">Protokol</label>
+                <select id="rProto" class="w-full bg-cyber-950 border border-cyber-border focus:border-neon-cyan rounded-lg px-3 py-2 text-xs text-white outline-none transition">
+                  <option value="TCP">TCP</option>
+                  <option value="UDP">UDP</option>
+                  <option value="TCP/UDP">TCP/UDP</option>
+                </select>
+              </div>
+
+              <!-- Action -->
+              <div>
+                <label for="rAction" class="block text-xs font-semibold text-slate-300 mb-1.5">Aksi</label>
+                <select id="rAction" class="w-full bg-cyber-950 border border-cyber-border focus:border-neon-cyan rounded-lg px-3 py-2 text-xs text-white outline-none transition">
+                  <option value="Izinkan">Izinkan (ALLOW)</option>
+                  <option value="Blokir">Blokir (BLOCK)</option>
+                </select>
+              </div>
+
+              <!-- Submit Button -->
+              <div class="sm:col-span-2 lg:col-span-6 mt-1">
+                <button type="submit" class="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/40 font-semibold text-xs tracking-wide transition active:scale-95 flex items-center justify-center gap-2">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Simpan Aturan Firewall
+                </button>
+              </div>
+
+            </div>
+
+            <!-- Error Feedback -->
+            <div id="ruleError" class="hidden text-xs text-rose-400 mt-2 font-medium"></div>
+          </form>
+        </div>
+
+        <!-- Rules Table -->
+        <div class="bg-cyber-900 border border-cyber-border rounded-2xl p-5">
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-cyber-border-subtle">
+            <div class="flex items-center gap-3">
+              <h3 class="text-base font-semibold text-white">Daftar Aturan Firewall Aktif</h3>
+              <span id="rulesInfo" class="text-xs font-mono px-2.5 py-1 rounded-full bg-cyber-850 border border-cyber-border text-slate-400">4 aktif dari 4 aturan</span>
+            </div>
+            <button id="btnResetRules" type="button" class="text-xs px-2.5 py-1.5 rounded-lg bg-cyber-800 hover:bg-cyber-750 text-slate-400 hover:text-white border border-cyber-border transition flex items-center gap-1.5" title="Kembalikan aturan ke data awal database.sql">
+              <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Reset Default (database.sql)</span>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto mt-3">
+            <table class="w-full text-left text-xs mobile-card-table">
+              <thead>
+                <tr class="text-[11px] uppercase tracking-wider text-slate-400 border-b border-cyber-border-subtle">
+                  <th class="py-2.5 px-3">Nama Aturan</th>
+                  <th class="py-2.5 px-3">Alamat IP</th>
+                  <th class="py-2.5 px-3">Port</th>
+                  <th class="py-2.5 px-3">Protokol</th>
+                  <th class="py-2.5 px-3">Aksi</th>
+                  <th class="py-2.5 px-3 text-center">Status</th>
+                  <th class="py-2.5 px-3 text-right">Opsi</th>
+                </tr>
+              </thead>
+              <tbody id="rulesBody" class="divide-y divide-cyber-border-subtle font-sans">
+                <!-- Dynamically filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           VIEW 3: SIMULASI TRAFFIC & SERANGAN
+           ======================================================== -->
+      <section id="view-sim" class="view-panel hidden space-y-6">
+        
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Simulasi Lalu Lintas Jaringan &amp; Uji Serangan</h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1 max-w-3xl">
+            Simulasi menghasilkan lalu lintas normal dan probe mencurigakan secara otomatis. Anda juga dapat meluncurkan skenario serangan siber terarah untuk menguji respon firewall dan IDS secara live.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          <!-- Left: Simulation Control & Attack Buttons (5 Cols) -->
+          <div class="lg:col-span-5 space-y-6">
+            
+            <!-- Sim Control Panel -->
+            <div class="bg-cyber-900 border border-cyber-border rounded-2xl p-5">
+              <h3 class="text-sm font-semibold text-white mb-3">Status Kontrol Engine</h3>
+              
+              <div class="flex items-center gap-3 mb-4 p-3 rounded-xl bg-cyber-950 border border-cyber-border-subtle">
+                <span id="simStateDot" class="w-3 h-3 rounded-full bg-neon-green animate-pulse-dot shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+                <span id="simStateText" class="text-xs font-semibold text-white">Simulasi Berjalan</span>
+              </div>
+
+              <button id="btnToggleSim" type="button" class="w-full py-2.5 px-4 rounded-xl bg-cyber-800 hover:bg-cyber-750 text-white font-medium text-xs border border-cyber-border transition active:scale-95">
+                Jeda Simulasi
+              </button>
+
+              <!-- Session Metrics -->
+              <div class="grid grid-cols-3 gap-2 mt-4 text-center">
+                <div class="p-2.5 rounded-xl bg-cyber-950 border border-cyber-border-subtle">
+                  <p class="text-[10px] uppercase font-mono text-slate-400">Paket Sesi</p>
+                  <p id="sessTotal" class="text-lg font-bold font-mono text-white mt-0.5">0</p>
+                </div>
+                <div class="p-2.5 rounded-xl bg-cyber-950 border border-cyber-border-subtle">
+                  <p class="text-[10px] uppercase font-mono text-slate-400">Diizinkan</p>
+                  <p id="sessAllowed" class="text-lg font-bold font-mono text-neon-green mt-0.5">0</p>
+                </div>
+                <div class="p-2.5 rounded-xl bg-cyber-950 border border-cyber-border-subtle">
+                  <p class="text-[10px] uppercase font-mono text-slate-400">Diblokir</p>
+                  <p id="sessBlocked" class="text-lg font-bold font-mono text-neon-red mt-0.5">0</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Attack Launchers -->
+            <div class="bg-cyber-900 border border-cyber-border rounded-2xl p-5">
+              <div class="pb-3 border-b border-cyber-border-subtle mb-3">
+                <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                  <svg class="w-4 h-4 text-neon-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Luncurkan Simulasi Serangan
+                </h3>
+                <p class="text-[11px] text-slate-400 mt-0.5">Uji respon pertahanan terhadap berbagai jenis ancaman</p>
+              </div>
+
+              <div class="space-y-2">
+                
+                <!-- DDoS -->
+                <button type="button" data-attack="ddos" class="attack-btn w-full p-3 rounded-xl bg-cyber-950 hover:bg-cyber-850 border border-cyber-border hover:border-rose-500/50 transition flex items-center gap-3 text-left group">
+                  <div class="w-9 h-9 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 group-hover:scale-105 transition flex-shrink-0">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.86 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.86-6.02A1 1 0 0 0 11 14z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <b class="text-xs text-white block">Serangan DDoS Flood</b>
+                    <span class="text-[11px] text-slate-400">Banjir paket SYN masif ke port HTTP/HTTPS</span>
+                  </div>
+                </button>
+
+                <!-- Port Scan -->
+                <button type="button" data-attack="portscan" class="attack-btn w-full p-3 rounded-xl bg-cyber-950 hover:bg-cyber-850 border border-cyber-border hover:border-amber-500/50 transition flex items-center gap-3 text-left group">
+                  <div class="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-105 transition flex-shrink-0">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <b class="text-xs text-white block">Port Scanning Terdistribusi</b>
+                    <span class="text-[11px] text-slate-400">Pemindaian 15 port sensitif secara berurutan</span>
+                  </div>
+                </button>
+
+                <!-- Brute Force SSH -->
+                <button type="button" data-attack="bruteforce" class="attack-btn w-full p-3 rounded-xl bg-cyber-950 hover:bg-cyber-850 border border-cyber-border hover:border-neon-cyan/50 transition flex items-center gap-3 text-left group">
+                  <div class="w-9 h-9 rounded-lg bg-neon-cyan/10 border border-neon-cyan/30 flex items-center justify-center text-neon-cyan group-hover:scale-105 transition flex-shrink-0">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <b class="text-xs text-white block">Brute Force SSH (Port 22)</b>
+                    <span class="text-[11px] text-slate-400">Percobaan login kredensial berulang kali</span>
+                  </div>
+                </button>
+
+                <!-- SQL Injection -->
+                <button type="button" data-attack="sqli" class="attack-btn w-full p-3 rounded-xl bg-cyber-950 hover:bg-cyber-850 border border-cyber-border hover:border-purple-500/50 transition flex items-center gap-3 text-left group">
+                  <div class="w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 group-hover:scale-105 transition flex-shrink-0">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <b class="text-xs text-white block">SQL Injection Attack</b>
+                    <span class="text-[11px] text-slate-400">Eksploitasi payload database via URI parameter</span>
+                  </div>
+                </button>
+
+                <!-- Malware C2 -->
+                <button type="button" data-attack="malware" class="attack-btn w-full p-3 rounded-xl bg-cyber-950 hover:bg-cyber-850 border border-cyber-border hover:border-rose-500/50 transition flex items-center gap-3 text-left group">
+                  <div class="w-9 h-9 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 group-hover:scale-105 transition flex-shrink-0">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6z"/><path d="M12 20v-9"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <b class="text-xs text-white block">Malware Command &amp; Control (C2)</b>
+                    <span class="text-[11px] text-slate-400">Beaconing tersembunyi ke port khusus 4444</span>
+                  </div>
+                </button>
+
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right: Live Packet Feed (7 Cols) -->
+          <div class="lg:col-span-7 bg-cyber-900 border border-cyber-border rounded-2xl p-5 flex flex-col h-full">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-cyber-border-subtle">
+              <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                <svg class="w-4 h-4 text-neon-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/>
+                </svg>
+                Feed Paket Langsung (Packet Sniffer)
+              </h3>
+              <span id="feedStatus" class="px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-neon-green/15 text-neon-green border border-neon-green/30">LIVE</span>
+            </div>
+
+            <!-- Last Inspected Packet Bar -->
+            <div class="my-3 p-3 rounded-xl bg-cyber-950 border border-cyber-border-subtle text-xs">
+              <p class="text-[10px] uppercase font-mono tracking-wider text-slate-400">Koneksi Terakhir Dievaluasi</p>
+              <div class="flex flex-wrap items-center justify-between gap-2 mt-1">
+                <span id="lastConn" class="font-mono text-slate-300">Menunggu paket data pertama…</span>
+                <span id="lastConnChip"></span>
+              </div>
+            </div>
+
+            <!-- Live Feed Scroll Container -->
+            <div id="feedList" class="flex-1 font-mono text-xs overflow-y-auto space-y-1.5 max-h-[460px] pr-1" aria-live="off">
+              <div id="feedEmpty" class="text-center py-16 text-slate-500 font-sans text-xs">
+                Feed kosong — paket lalu lintas data akan muncul di sini secara real-time.
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Diagnostic Manual Packet Inspector -->
+        <div class="bg-cyber-900 border border-cyber-border rounded-2xl p-5">
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-cyber-border-subtle mb-4">
+            <div>
+              <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                <svg class="w-4 h-4 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                Inspeksi &amp; Uji Diagnostik Paket Manual (Packet Tracer)
+              </h3>
+              <p class="text-xs text-slate-400 mt-0.5">Uji coba simulasi paket data tunggal dan periksa jejak evaluasi firewall &amp; IDS langkah demi langkah.</p>
+            </div>
+            <span class="text-[10px] font-mono px-2.5 py-1 rounded-full bg-cyber-850 text-neon-cyan border border-cyber-border">Interactive Diagnostic</span>
+          </div>
+
+          <form id="tracerForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end" novalidate>
+            <div>
+              <label for="trIp" class="block text-xs font-semibold text-slate-300 mb-1">IP Sumber</label>
+              <input id="trIp" type="text" value="185.220.101.7" class="w-full bg-cyber-950 border border-cyber-border focus:border-neon-cyan rounded-lg px-3 py-2 text-xs text-white font-mono outline-none" />
+            </div>
+
+            <div>
+              <label for="trPort" class="block text-xs font-semibold text-slate-300 mb-1">Port Tujuan</label>
+              <input id="trPort" type="number" value="22" min="1" max="65535" class="w-full bg-cyber-950 border border-cyber-border focus:border-neon-cyan rounded-lg px-3 py-2 text-xs text-white font-mono outline-none" />
+            </div>
+
+            <div>
+              <label for="trProto" class="block text-xs font-semibold text-slate-300 mb-1">Protokol</label>
+              <select id="trProto" class="w-full bg-cyber-950 border border-cyber-border focus:border-neon-cyan rounded-lg px-3 py-2 text-xs text-white outline-none">
+                <option value="TCP">TCP</option>
+                <option value="UDP">UDP</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="trDesc" class="block text-xs font-semibold text-slate-300 mb-1">Deskripsi / Payload</label>
+              <input id="trDesc" type="text" value="Percobaan Login SSH" class="w-full bg-cyber-950 border border-cyber-border focus:border-neon-cyan rounded-lg px-3 py-2 text-xs text-white outline-none" />
+            </div>
+
+            <div>
+              <button type="submit" class="w-full py-2 px-4 rounded-lg bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/40 font-semibold text-xs transition active:scale-95 flex items-center justify-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+                Uji Paket Ini
+              </button>
+            </div>
+          </form>
+
+          <!-- Tracer Result Output Box -->
+          <div id="tracerResult" class="hidden mt-4 p-4 rounded-xl bg-cyber-950 border border-cyber-border font-mono text-xs space-y-2"></div>
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           VIEW 4: LOG KEAMANAN
+           ======================================================== -->
+      <section id="view-logs" class="view-panel hidden space-y-6">
+        
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Log Keamanan &amp; Audit Trail</h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1 max-w-3xl">
+            Catatan komprehensif seluruh aktivitas jaringan: waktu kejadian, IP sumber, port tujuan, jenis aktivitas, dan tindakan sistem (DIIZINKAN atau DIBLOKIR) sesuai dengan tabel database <code class="text-neon-cyan">security_logs</code>.
+          </p>
+        </div>
+
+        <div class="bg-cyber-900 border border-cyber-border rounded-2xl p-5">
+          
+          <!-- Filters & Action Bar -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-cyber-border-subtle">
+            
+            <div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-[240px]">
+              
+              <!-- Search -->
+              <div class="relative flex-1 min-w-[180px]">
+                <svg class="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                </svg>
+                <input id="logSearch" type="text" placeholder="Cari IP, port, atau deskripsi aktivitas…" class="w-full bg-cyber-950 border border-cyber-border focus:border-neon-cyan rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition" />
+              </div>
+
+              <!-- Filter Action -->
+              <select id="logFilterAction" class="bg-cyber-950 border border-cyber-border focus:border-neon-cyan rounded-lg px-3 py-2 text-xs text-white outline-none transition">
+                <option value="">Semua Tindakan</option>
+                <option value="Diizinkan">Diizinkan</option>
+                <option value="Diblokir">Diblokir</option>
+              </select>
+
+              <!-- Filter Type -->
+              <select id="logFilterType" class="bg-cyber-950 border border-cyber-border focus:border-neon-cyan rounded-lg px-3 py-2 text-xs text-white outline-none transition">
+                <option value="">Semua Jenis Aktivitas</option>
+                <option value="Traffic Normal">Traffic Normal</option>
+                <option value="Traffic Mencurigakan">Traffic Mencurigakan</option>
+                <option value="Serangan">Serangan</option>
+                <option value="Sistem">Sistem</option>
+              </select>
+
+            </div>
+
+            <!-- Export & Clear Buttons -->
+            <div class="flex items-center gap-2">
+              <button id="btnExportLogs" type="button" class="px-3 py-2 text-xs bg-cyber-800 hover:bg-cyber-750 text-slate-300 hover:text-white border border-cyber-border rounded-lg transition flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Export CSV
+              </button>
+
+              <button id="btnClearLogs" type="button" class="px-3 py-2 text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-lg transition">
+                Hapus Semua Log
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Entries Count -->
+          <div class="py-2.5 text-xs text-slate-400">
+            <span id="logCount">Menampilkan 0 entri</span>
+          </div>
+
+          <!-- Logs Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs mobile-card-table">
+              <thead>
+                <tr class="text-[11px] uppercase tracking-wider text-slate-400 border-b border-cyber-border-subtle">
+                  <th class="py-2.5 px-3">Waktu Kejadian</th>
+                  <th class="py-2.5 px-3">IP Sumber</th>
+                  <th class="py-2.5 px-3">Port Tujuan</th>
+                  <th class="py-2.5 px-3">Jenis Aktivitas</th>
+                  <th class="py-2.5 px-3">Tindakan Sistem</th>
+                </tr>
+              </thead>
+              <tbody id="logBody" class="divide-y divide-cyber-border-subtle font-sans">
+                <!-- Dynamically filled by JS -->
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           VIEW 5: BLACKLIST IP & ANCAMAN
+           ======================================================== -->
+      <section id="view-blacklist" class="view-panel hidden space-y-6">
+        
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Blacklist IP &amp; Manajemen Ancaman</h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1 max-w-3xl">
+            Seluruh paket dari alamat IP yang terdaftar di sini akan langsung di-drop di layer paling awal sebelum evaluasi aturan firewall. Alamat IP yang memicu serangan masif juga akan dimasukkan secara otomatis oleh IDS.
+          </p>
+        </div>
+
+        <!-- Add Blacklist Form -->
+        <div class="bg-cyber-900 border border-cyber-border rounded-2xl p-5">
+          <h3 class="text-base font-semibold text-white mb-4 flex items-center gap-2">
+            <svg class="w-4 h-4 text-neon-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>
+            </svg>
+            Tambah IP ke Blacklist
+          </h3>
+
+          <form id="blForm" novalidate>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 items-end">
+              
+              <div class="md:col-span-4">
+                <label for="bIp" class="block text-xs font-semibold text-slate-300 mb-1.5">Alamat IP</label>
+                <input id="bIp" type="text" placeholder="cth. 198.51.100.23" autocomplete="off" class="w-full bg-cyber-950 border border-cyber-border focus:border-neon-cyan rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-500 font-mono outline-none transition" />
+              </div>
+
+              <div class="md:col-span-6">
+                <label for="bReason" class="block text-xs font-semibold text-slate-300 mb-1.5">Alasan Pemblokiran</label>
+                <input id="bReason" type="text" placeholder="cth. Terdeteksi botnet command & control" autocomplete="off" class="w-full bg-cyber-950 border border-cyber-border focus:border-neon-cyan rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-500 outline-none transition" />
+              </div>
+
+              <div class="md:col-span-2">
+                <button type="submit" class="w-full py-2 px-4 rounded-lg bg-neon-red/15 hover:bg-neon-red/25 text-neon-red border border-neon-red/40 font-semibold text-xs transition active:scale-95 flex items-center justify-center gap-1.5">
+                  + Blokir IP
+                </button>
+              </div>
+
+            </div>
+
+            <!-- Error Feedback -->
+            <div id="blError" class="hidden text-xs text-rose-400 mt-2 font-medium"></div>
+          </form>
+        </div>
+
+        <!-- Blacklist Table -->
+        <div class="bg-cyber-900 border border-cyber-border rounded-2xl p-5">
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-cyber-border-subtle">
+            <h3 class="text-base font-semibold text-white">Daftar IP Terblokir Permanen</h3>
+            <span id="blInfo" class="text-xs font-mono px-2.5 py-1 rounded-full bg-cyber-850 border border-cyber-border text-neon-red">5 IP diblokir</span>
+          </div>
+
+          <div class="overflow-x-auto mt-3">
+            <table class="w-full text-left text-xs mobile-card-table">
+              <thead>
+                <tr class="text-[11px] uppercase tracking-wider text-slate-400 border-b border-cyber-border-subtle">
+                  <th class="py-2.5 px-3">Alamat IP</th>
+                  <th class="py-2.5 px-3">Alasan Pemblokiran</th>
+                  <th class="py-2.5 px-3">Waktu Ditambahkan</th>
+                  <th class="py-2.5 px-3">Paket Diblokir</th>
+                  <th class="py-2.5 px-3 text-right">Opsi</th>
+                </tr>
+              </thead>
+              <tbody id="blBody" class="divide-y divide-cyber-border-subtle font-sans">
+                <!-- Dynamically filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- ======================= MODAL: IDENTITAS PENGEMBANG ======================= -->
+  <div id="studentModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-cyber-900 border border-cyber-border rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-feed-in">
+      
+      <button id="btnCloseStudentModal" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <div class="flex items-center gap-3.5 mb-5">
+        <div class="w-12 h-12 rounded-xl bg-neon-cyan/10 border border-neon-cyan/30 flex items-center justify-center text-neon-cyan shadow-glow-cyan">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-white">Tugas Keamanan Jaringan</h3>
+          <p class="text-xs text-slate-400">Implementasi Sistem Simulasi Firewall Logis</p>
+        </div>
+      </div>
+
+      <div class="space-y-3 bg-cyber-950 p-4 rounded-xl border border-cyber-border text-xs">
+        <div class="flex justify-between py-1 border-b border-cyber-border-subtle">
+          <span class="text-slate-400">Mata Kuliah:</span>
+          <span class="font-semibold text-white">Keamanan Jaringan</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-cyber-border-subtle">
+          <span class="text-slate-400">Nama Mahasiswa:</span>
+          <span class="font-semibold text-neon-cyan">Muhamad Yusuf</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-cyber-border-subtle">
+          <span class="text-slate-400">NIM:</span>
+          <span class="font-mono font-semibold text-white">242502040108</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span class="text-slate-400">Kelas:</span>
+          <span class="font-semibold text-white">3TI01</span>
+        </div>
+      </div>
+
+      <div class="mt-5 text-center">
+        <button id="btnDismissStudentModal" type="button" class="w-full py-2.5 rounded-xl bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/30 text-xs font-semibold transition">
+          Tutup
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================= MODAL: DATABASE SQL SCHEMA ======================= -->
+  <div id="sqlModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-cyber-900 border border-cyber-border rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative animate-feed-in max-h-[90vh] flex flex-col">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-cyber-border-subtle">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Struktur Database: cybershield_db</h3>
+            <p class="text-[11px] text-slate-400">Sesuai file database.sql untuk proyek Keamanan Jaringan</p>
+          </div>
+        </div>
+
+        <button id="btnCloseSqlModal" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto space-y-4 my-4 pr-1 text-xs font-mono">
+        
+        <!-- Table 1 -->
+        <div class="p-3 bg-cyber-950 rounded-xl border border-cyber-border-subtle">
+          <div class="flex justify-between items-center text-neon-cyan font-bold mb-1.5">
+            <span>1. firewall_rules</span>
+            <span class="text-[10px] text-slate-400 font-sans">Aturan Penyaringan Paket</span>
+          </div>
+          <p class="text-slate-400 text-[11px] font-sans mb-2">Kolom: id (PK), rule_name, ip_address, port, protocol (TCP/UDP), action (ALLOW/BLOCK), is_active, created_at</p>
+          <div class="bg-cyber-900 p-2 rounded text-[11px] text-slate-300">
+            INSERT INTO firewall_rules VALUES ('Izinkan HTTP Publik', '0.0.0.0/0', 80, 'TCP', 'ALLOW', 1)...
+          </div>
+        </div>
+
+        <!-- Table 2 -->
+        <div class="p-3 bg-cyber-950 rounded-xl border border-cyber-border-subtle">
+          <div class="flex justify-between items-center text-neon-green font-bold mb-1.5">
+            <span>2. security_logs</span>
+            <span class="text-[10px] text-slate-400 font-sans">Log Audit Keamanan</span>
+          </div>
+          <p class="text-slate-400 text-[11px] font-sans mb-2">Kolom: id (PK), event_time, source_ip, dest_port, activity_type, action, description</p>
+          <div class="bg-cyber-900 p-2 rounded text-[11px] text-slate-300">
+            INSERT INTO security_logs VALUES ('185.220.101.7', 22, 'Brute Force SSH', 'DIBLOKIR')...
+          </div>
+        </div>
+
+        <!-- Table 3 -->
+        <div class="p-3 bg-cyber-950 rounded-xl border border-cyber-border-subtle">
+          <div class="flex justify-between items-center text-neon-red font-bold mb-1.5">
+            <span>3. blacklist_ips</span>
+            <span class="text-[10px] text-slate-400 font-sans">Daftar Hitam IP Ancaman</span>
+          </div>
+          <p class="text-slate-400 text-[11px] font-sans mb-2">Kolom: id (PK), ip_address (UNIQUE), reason, blocked_at</p>
+          <div class="bg-cyber-900 p-2 rounded text-[11px] text-slate-300">
+            INSERT INTO blacklist_ips VALUES ('45.135.210.19', 'Serangan DDoS')...
+          </div>
+        </div>
+
+      </div>
+
+      <div class="pt-3 border-t border-cyber-border-subtle flex justify-end">
+        <button id="btnDismissSqlModal" type="button" class="px-4 py-2 bg-cyber-800 hover:bg-cyber-750 text-slate-300 hover:text-white rounded-lg text-xs font-semibold transition">
+          Tutup
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================= MODAL: KONFIGURASI SUPABASE CLOUD ======================= -->
+  <div id="supabaseModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-cyber-900 border border-cyber-border rounded-2xl max-w-xl w-full p-6 shadow-2xl relative animate-feed-in max-h-[92vh] flex flex-col">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-cyber-border-subtle">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              Koneksi Database Supabase Cloud
+              <span id="modalSbBadge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Lokal</span>
+            </h3>
+            <p class="text-[11px] text-slate-400">Sinkronisasi aturan, blacklist, dan log audit secara online waktu nyata</p>
+          </div>
+        </div>
+
+        <button id="btnCloseSupabaseModal" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto space-y-4 my-4 pr-1 text-xs">
+        
+        <!-- Status Banner -->
+        <div id="sbStatusBox" class="p-3.5 rounded-xl bg-cyber-950 border border-cyber-border flex items-start gap-3">
+          <span id="sbBoxDot" class="w-2.5 h-2.5 rounded-full bg-slate-500 mt-1 flex-shrink-0"></span>
+          <div>
+            <b id="sbBoxTitle" class="text-white block font-medium">Mode Penyimpanan Lokal Aktif</b>
+            <span id="sbBoxDesc" class="text-slate-400 text-[11px] block mt-0.5">
+              Data tersimpan di memori browser. Masukkan <b>Anon Key</b> Supabase Anda di bawah agar sinkron ke server online.
+            </span>
+          </div>
+        </div>
+
+        <!-- Connection Form -->
+        <form id="sbForm" class="space-y-3" novalidate>
+          <div>
+            <label for="sbUrl" class="block font-semibold text-slate-300 mb-1">Project URL Supabase</label>
+            <input id="sbUrl" type="url" placeholder="https://your-project-id.supabase.co" class="w-full bg-cyber-950 border border-cyber-border focus:border-neon-cyan rounded-lg px-3.5 py-2 text-xs text-white font-mono outline-none" />
+            <p class="text-[10px] text-slate-500 mt-1">Masukkan URL project Supabase Anda (Project Settings &gt; API &gt; URL)</p>
+          </div>
+
+          <div>
+            <label for="sbKey" class="block font-semibold text-slate-300 mb-1">Project API Anon Key (Publishable)</label>
+            <textarea id="sbKey" rows="2" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="w-full bg-cyber-950 border border-cyber-border focus:border-neon-cyan rounded-lg px-3.5 py-2 text-xs text-white font-mono outline-none resize-none"></textarea>
+            <p class="text-[10px] text-slate-400 mt-1">
+              Dapatkan dari: <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" class="text-emerald-400 hover:underline">Supabase Dashboard &gt; Project Settings &gt; API &gt; anon public key</a>
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2 pt-1">
+            <button type="submit" class="px-4 py-2.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-semibold transition active:scale-95 flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Simpan &amp; Hubungkan
+            </button>
+
+            <button id="btnDisconnectSb" type="button" class="px-3 py-2.5 rounded-lg bg-cyber-800 hover:bg-cyber-750 text-slate-300 border border-cyber-border transition">
+              Putuskan (Gunakan Lokal)
+            </button>
+          </div>
+        </form>
+
+        <!-- SQL Schema Guide Box -->
+        <div class="p-3.5 rounded-xl bg-cyber-950 border border-cyber-border space-y-2">
+          <div class="flex items-center justify-between">
+            <b class="text-white flex items-center gap-1.5 text-xs">
+              <svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Langkah 1: Setup Tabel di Supabase
+            </b>
+            <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" class="text-[11px] text-neon-cyan hover:underline flex items-center gap-1">
+              Buka SQL Editor ↗
+            </a>
+          </div>
+          <p class="text-[11px] text-slate-400">
+            Jalankan skrip yang ada di berkas <code class="text-amber-300">supabase_schema.sql</code> di SQL Editor Supabase untuk membuat tabel <code class="text-white">firewall_rules</code>, <code class="text-white">security_logs</code>, dan <code class="text-white">blacklist_ips</code>.
+          </p>
+          <div class="flex items-center gap-2 pt-1">
+            <button id="btnCopySql" type="button" class="px-3 py-1.5 rounded-lg bg-cyber-800 hover:bg-cyber-750 text-slate-300 hover:text-white border border-cyber-border text-[11px] font-mono transition flex items-center gap-1">
+              <svg class="w-3.5 h-3.5 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+              </svg>
+              Salin Skrip SQL Schema
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="pt-3 border-t border-cyber-border-subtle flex justify-end">
+        <button id="btnDismissSupabaseModal" type="button" class="px-4 py-2 bg-cyber-800 hover:bg-cyber-750 text-slate-300 hover:text-white rounded-lg text-xs font-semibold transition">
+          Tutup
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================= TOAST NOTIFICATION CONTAINER ======================= -->
+  <div id="toasts" class="fixed right-4 bottom-4 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none" aria-live="polite"></div>
+
+  <!-- Configuration & JavaScript Implementation -->
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+

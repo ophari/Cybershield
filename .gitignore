@@ -1,0 +1,25 @@
+# Dependencies & Environment
+node_modules/
+.env
+.env.local
+.env.*.local
+
+# IDE & Tool configurations
+.vscode/
+.idea/
+.mcp.json
+.agents/
+skills-lock.json
+Cybershield
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs & temp
+*.log
+npm-debug.log*
+yarn-debug.log*
