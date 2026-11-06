@@ -247,12 +247,6 @@
           <span>Inspeksi Paket:</span>
           <span class="text-neon-cyan font-mono font-semibold" id="sidePackets">124.580</span>
         </div>
-        <button id="btnOpenSqlModal" type="button" class="w-full mt-2 py-2 px-3 bg-cyber-800 hover:bg-cyber-750 text-slate-300 hover:text-white border border-cyber-border rounded-lg text-xs font-mono transition flex items-center justify-center gap-1.5">
-          <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-          </svg>
-          Database SQL Schema
-        </button>
       </div>
 
     </aside>
@@ -580,11 +574,11 @@
               <h3 class="text-base font-semibold text-white">Daftar Aturan Firewall Aktif</h3>
               <span id="rulesInfo" class="text-xs font-mono px-2.5 py-1 rounded-full bg-cyber-850 border border-cyber-border text-slate-400">4 aktif dari 4 aturan</span>
             </div>
-            <button id="btnResetRules" type="button" class="text-xs px-2.5 py-1.5 rounded-lg bg-cyber-800 hover:bg-cyber-750 text-slate-400 hover:text-white border border-cyber-border transition flex items-center gap-1.5" title="Kembalikan aturan ke data awal database.sql">
+            <button id="btnResetRules" type="button" class="text-xs px-2.5 py-1.5 rounded-lg bg-cyber-800 hover:bg-cyber-750 text-slate-400 hover:text-white border border-cyber-border transition flex items-center gap-1.5" title="Kembalikan aturan ke data awal default">
               <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              <span>Reset Default (database.sql)</span>
+              <span>Reset Default</span>
             </button>
           </div>
 
@@ -1039,79 +1033,6 @@
 
       <div class="mt-5 text-center">
         <button id="btnDismissStudentModal" type="button" class="w-full py-2.5 rounded-xl bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/30 text-xs font-semibold transition">
-          Tutup
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ======================= MODAL: DATABASE SQL SCHEMA ======================= -->
-  <div id="sqlModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-cyber-900 border border-cyber-border rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative animate-feed-in max-h-[90vh] flex flex-col">
-      
-      <div class="flex items-center justify-between pb-3 border-b border-cyber-border-subtle">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
-            </svg>
-          </div>
-          <div>
-            <h3 class="text-sm font-bold text-white">Struktur Database: cybershield_db</h3>
-            <p class="text-[11px] text-slate-400">Sesuai file database.sql untuk proyek Keamanan Jaringan</p>
-          </div>
-        </div>
-
-        <button id="btnCloseSqlModal" class="text-slate-400 hover:text-white p-1 rounded-lg">
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      <div class="flex-1 overflow-y-auto space-y-4 my-4 pr-1 text-xs font-mono">
-        
-        <!-- Table 1 -->
-        <div class="p-3 bg-cyber-950 rounded-xl border border-cyber-border-subtle">
-          <div class="flex justify-between items-center text-neon-cyan font-bold mb-1.5">
-            <span>1. firewall_rules</span>
-            <span class="text-[10px] text-slate-400 font-sans">Aturan Penyaringan Paket</span>
-          </div>
-          <p class="text-slate-400 text-[11px] font-sans mb-2">Kolom: id (PK), rule_name, ip_address, port, protocol (TCP/UDP), action (ALLOW/BLOCK), is_active, created_at</p>
-          <div class="bg-cyber-900 p-2 rounded text-[11px] text-slate-300">
-            INSERT INTO firewall_rules VALUES ('Izinkan HTTP Publik', '0.0.0.0/0', 80, 'TCP', 'ALLOW', 1)...
-          </div>
-        </div>
-
-        <!-- Table 2 -->
-        <div class="p-3 bg-cyber-950 rounded-xl border border-cyber-border-subtle">
-          <div class="flex justify-between items-center text-neon-green font-bold mb-1.5">
-            <span>2. security_logs</span>
-            <span class="text-[10px] text-slate-400 font-sans">Log Audit Keamanan</span>
-          </div>
-          <p class="text-slate-400 text-[11px] font-sans mb-2">Kolom: id (PK), event_time, source_ip, dest_port, activity_type, action, description</p>
-          <div class="bg-cyber-900 p-2 rounded text-[11px] text-slate-300">
-            INSERT INTO security_logs VALUES ('185.220.101.7', 22, 'Brute Force SSH', 'DIBLOKIR')...
-          </div>
-        </div>
-
-        <!-- Table 3 -->
-        <div class="p-3 bg-cyber-950 rounded-xl border border-cyber-border-subtle">
-          <div class="flex justify-between items-center text-neon-red font-bold mb-1.5">
-            <span>3. blacklist_ips</span>
-            <span class="text-[10px] text-slate-400 font-sans">Daftar Hitam IP Ancaman</span>
-          </div>
-          <p class="text-slate-400 text-[11px] font-sans mb-2">Kolom: id (PK), ip_address (UNIQUE), reason, blocked_at</p>
-          <div class="bg-cyber-900 p-2 rounded text-[11px] text-slate-300">
-            INSERT INTO blacklist_ips VALUES ('45.135.210.19', 'Serangan DDoS')...
-          </div>
-        </div>
-
-      </div>
-
-      <div class="pt-3 border-t border-cyber-border-subtle flex justify-end">
-        <button id="btnDismissSqlModal" type="button" class="px-4 py-2 bg-cyber-800 hover:bg-cyber-750 text-slate-300 hover:text-white rounded-lg text-xs font-semibold transition">
           Tutup
         </button>
       </div>

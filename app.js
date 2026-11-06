@@ -90,7 +90,7 @@ function playBlockedSound() {
 // KONFIGURASI SUPABASE CLOUD & REPLIKASI ONLINE
 // ========================================================
 const DEFAULT_SUPABASE_URL = "";
-let supabase = null;
+let supabaseClient = null;
 let isSupabaseOnline = false;
 let supabaseRealtimeChannel = null;
 
@@ -246,8 +246,8 @@ function evaluatePacket(pkt) {
   const bl = state.blacklist.find((b) => b.ip === pkt.src);
   if (bl) {
     bl.hits++;
-    if (isSupabaseOnline && supabase) {
-      supabase.from("blacklist_ips").update({ hits: bl.hits }).eq("ip_address", bl.ip).then();
+    if (isSupabaseOnline && supabaseClient) {
+      supabaseClient.from("blacklist_ips").update({ hits: bl.hits }).eq("ip_address", bl.ip).then();
     }
     return { action: "Blokir", reason: "Blacklist IP (" + bl.reason + ")", by: "blacklist" };
   }
@@ -359,8 +359,8 @@ function processPacket(pkt) {
   pushFeedItem(pkt, verdict);
 
   // Sync Log ke Supabase (Untuk ancaman yang diblokir atau sampel traffic)
-  if (isSupabaseOnline && supabase && (verdict.action === "Blokir" || Math.random() < 0.12)) {
-    supabase
+  if (isSupabaseOnline && supabaseClient && (verdict.action === "Blokir" || Math.random() < 0.12)) {
+    supabaseClient
       .from("security_logs")
       .insert([
         {
@@ -496,8 +496,8 @@ function autoBlacklistIp(ip, reason) {
   });
   renderBlacklist();
 
-  if (isSupabaseOnline && supabase) {
-    supabase.from("blacklist_ips").upsert([{ ip_address: ip, reason: reason, hits: 1 }]).then();
+  if (isSupabaseOnline && supabaseClient) {
+    supabaseClient.from("blacklist_ips").upsert([{ ip_address: ip, reason: reason, hits: 1 }]).then();
   }
 
   addLogEntry({
@@ -1212,8 +1212,8 @@ $("ruleForm").addEventListener("submit", async (ev) => {
   $("ruleForm").reset();
 
   // Dual-write ke Supabase jika online
-  if (isSupabaseOnline && supabase) {
-    const { data, error } = await supabase.from("firewall_rules").insert([
+  if (isSupabaseOnline && supabaseClient) {
+    const { data, error } = await supabaseClient.from("firewall_rules").insert([
       {
         rule_name: name,
         ip_address: ipRaw,
@@ -1237,8 +1237,8 @@ $("rulesBody").addEventListener("change", async (ev) => {
     rule.active = ev.target.checked;
     renderRules();
 
-    if (isSupabaseOnline && supabase) {
-      await supabase.from("firewall_rules").update({ is_active: rule.active }).eq("id", rule.id);
+    if (isSupabaseOnline && supabaseClient) {
+      await supabaseClient.from("firewall_rules").update({ is_active: rule.active }).eq("id", rule.id);
     }
 
     toast(rule.active ? "Aturan Diaktifkan" : "Aturan Dinonaktifkan", rule.name, rule.active ? "green" : "amber");
@@ -1284,14 +1284,14 @@ $("rulesBody").addEventListener("click", async (ev) => {
   state.rules = state.rules.filter((r) => r.id !== id);
   renderRules();
 
-  if (isSupabaseOnline && supabase) {
-    await supabase.from("firewall_rules").delete().eq("id", id);
+  if (isSupabaseOnline && supabaseClient) {
+    await supabaseClient.from("firewall_rules").delete().eq("id", id);
   }
 
   if (rule) toast("Aturan Dihapus", rule.name, "red");
 });
 
-// Reset Aturan ke Default (database.sql)
+// Reset Aturan ke Default
 const btnResetRules = $("btnResetRules");
 if (btnResetRules) {
   btnResetRules.addEventListener("click", async () => {
@@ -1299,10 +1299,10 @@ if (btnResetRules) {
     state.nextRuleId = 5;
     renderRules();
 
-    if (isSupabaseOnline && supabase) {
+    if (isSupabaseOnline && supabaseClient) {
       toast("Reset Cloud", "Mengatur ulang aturan di Supabase...", "amber");
-      await supabase.from("firewall_rules").delete().neq("id", 0);
-      await supabase.from("firewall_rules").insert(
+      await supabaseClient.from("firewall_rules").delete().neq("id", 0);
+      await supabaseClient.from("firewall_rules").insert(
         DEFAULT_RULES.map((r) => ({
           rule_name: r.name,
           ip_address: r.ip,
@@ -1314,7 +1314,7 @@ if (btnResetRules) {
       );
     }
 
-    toast("Reset Berhasil", "Aturan firewall dikembalikan ke data awal database.sql.", "green");
+    toast("Reset Berhasil", "Aturan firewall dikembalikan ke data awal default.", "green");
   });
 }
 
@@ -1348,8 +1348,8 @@ $("blForm").addEventListener("submit", async (ev) => {
   renderBlacklist();
   $("blForm").reset();
 
-  if (isSupabaseOnline && supabase) {
-    await supabase.from("blacklist_ips").upsert([{ ip_address: ip, reason: reason, hits: 0 }]);
+  if (isSupabaseOnline && supabaseClient) {
+    await supabaseClient.from("blacklist_ips").upsert([{ ip_address: ip, reason: reason, hits: 0 }]);
   }
 
   toast("IP Ditambahkan ke Blacklist", `${ip} akan langsung diblokir secara permanen.`, "red");
@@ -1362,8 +1362,8 @@ $("blBody").addEventListener("click", async (ev) => {
   state.blacklist = state.blacklist.filter((b) => b.ip !== ip);
   renderBlacklist();
 
-  if (isSupabaseOnline && supabase) {
-    await supabase.from("blacklist_ips").delete().eq("ip_address", ip);
+  if (isSupabaseOnline && supabaseClient) {
+    await supabaseClient.from("blacklist_ips").delete().eq("ip_address", ip);
   }
 
   toast("IP Dihapus dari Blacklist", `${ip} tidak lagi diblokir otomatis.`, "green");
@@ -1531,8 +1531,8 @@ $("btnClearLogs").addEventListener("click", async () => {
   renderLogs();
   renderAlerts();
 
-  if (isSupabaseOnline && supabase) {
-    await supabase.from("security_logs").delete().neq("id", 0);
+  if (isSupabaseOnline && supabaseClient) {
+    await supabaseClient.from("security_logs").delete().neq("id", 0);
   }
 
   toast("Log Dikosongkan", "Seluruh riwayat audit dan log keamanan telah dihapus.", "red");
@@ -1592,20 +1592,18 @@ $("btnStudentInfo").addEventListener("click", () => toggleModal("studentModal", 
 $("btnCloseStudentModal").addEventListener("click", () => toggleModal("studentModal", false));
 $("btnDismissStudentModal").addEventListener("click", () => toggleModal("studentModal", false));
 
-// SQL Modal
-$("btnOpenSqlModal").addEventListener("click", () => toggleModal("sqlModal", true));
-$("btnCloseSqlModal").addEventListener("click", () => toggleModal("sqlModal", false));
-$("btnDismissSqlModal").addEventListener("click", () => toggleModal("sqlModal", false));
-
 // Supabase Modal
 $("btnSupabaseConfig").addEventListener("click", () => toggleModal("supabaseModal", true));
 $("btnCloseSupabaseModal").addEventListener("click", () => toggleModal("supabaseModal", false));
 $("btnDismissSupabaseModal").addEventListener("click", () => toggleModal("supabaseModal", false));
 
-["studentModal", "sqlModal", "supabaseModal"].forEach((id) => {
-  $(id).addEventListener("click", (e) => {
-    if (e.target.id === id) toggleModal(id, false);
-  });
+["studentModal", "supabaseModal"].forEach((id) => {
+  const el = $(id);
+  if (el) {
+    el.addEventListener("click", (e) => {
+      if (e.target.id === id) toggleModal(id, false);
+    });
+  }
 });
 
 // ========================================================
@@ -1663,10 +1661,10 @@ async function initSupabase(customUrl, customKey) {
   }
 
   try {
-    supabase = window.supabase.createClient(url, key);
+    supabaseClient = window.supabase.createClient(url, key);
     
     // Test query ke tabel firewall_rules
-    const { data: rulesData, error: rulesErr } = await supabase
+    const { data: rulesData, error: rulesErr } = await supabaseClient
       .from("firewall_rules")
       .select("id, rule_name, ip_address, port, protocol, action, is_active")
       .order("id", { ascending: true });
@@ -1697,7 +1695,7 @@ async function initSupabase(customUrl, customKey) {
     }
 
     // Muat blacklist dari Supabase
-    const { data: blData } = await supabase
+    const { data: blData } = await supabaseClient
       .from("blacklist_ips")
       .select("ip_address, reason, hits, blocked_at")
       .order("id", { ascending: false });
@@ -1713,7 +1711,7 @@ async function initSupabase(customUrl, customKey) {
     }
 
     // Muat log audit awal dari Supabase
-    const { data: logData } = await supabase
+    const { data: logData } = await supabaseClient
       .from("security_logs")
       .select("*")
       .order("id", { ascending: false })
@@ -1747,18 +1745,18 @@ async function initSupabase(customUrl, customKey) {
 }
 
 function setupRealtime() {
-  if (!supabase || !isSupabaseOnline) return;
+  if (!supabaseClient || !isSupabaseOnline) return;
   try {
     if (supabaseRealtimeChannel) {
-      supabase.removeChannel(supabaseRealtimeChannel);
+      supabaseClient.removeChannel(supabaseRealtimeChannel);
     }
-    supabaseRealtimeChannel = supabase
+    supabaseRealtimeChannel = supabaseClient
       .channel("cybershield-realtime-channel")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "firewall_rules" },
         async () => {
-          const { data } = await supabase.from("firewall_rules").select("*").order("id", { ascending: true });
+          const { data } = await supabaseClient.from("firewall_rules").select("*").order("id", { ascending: true });
           if (data) {
             state.rules = data.map((r) => ({
               id: r.id,
@@ -1777,7 +1775,7 @@ function setupRealtime() {
         "postgres_changes",
         { event: "*", schema: "public", table: "blacklist_ips" },
         async () => {
-          const { data } = await supabase.from("blacklist_ips").select("*").order("id", { ascending: false });
+          const { data } = await supabaseClient.from("blacklist_ips").select("*").order("id", { ascending: false });
           if (data) {
             state.blacklist = data.map((b) => ({
               ip: b.ip_address,
@@ -1816,8 +1814,8 @@ $("sbForm").addEventListener("submit", async (e) => {
 $("btnDisconnectSb").addEventListener("click", () => {
   localStorage.removeItem("cybershield_sb_key");
   if ($("sbKey")) $("sbKey").value = "";
-  if (supabaseRealtimeChannel && supabase) supabase.removeChannel(supabaseRealtimeChannel);
-  supabase = null;
+  if (supabaseRealtimeChannel && supabaseClient) supabaseClient.removeChannel(supabaseRealtimeChannel);
+  supabaseClient = null;
   updateSupabaseStatus(false, "Koneksi Supabase diputuskan. Menggunakan memori lokal.");
   toast("Mode Lokal", "Database Supabase diputuskan.", "amber");
 });
